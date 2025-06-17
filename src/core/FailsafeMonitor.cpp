@@ -1,28 +1,32 @@
 #include "FailsafeMonitor.h"
-#include <iostream>
-#include <windows.h>
+#include <Windows.h>
 #include <thread>
+#include <chrono>
+#include <iostream>
+#include <atomic>
 
-bool is_key_pressed(int key) {
+FailsafeMonitor::FailsafeMonitor(std::atomic<bool>& locked, std::atomic<bool>& override)
+    : isLocked(locked), overrideActive(override) {}
+
+void FailsafeMonitor::start() {
+    std::thread(&FailsafeMonitor::monitorLoop, this).detach();
+}
+
+bool FailsafeMonitor::isKeyPressed(int key) {
     return GetAsyncKeyState(key) & 0x8000;
 }
 
-void FailsafeMonitor::run() {
-    bool z_pressed = false;
-    bool e_pressed = false;
-    bool u_pressed = false;
-    bool s_pressed = false;
-
+void FailsafeMonitor::monitorLoop() {
     while (true) {
-        if (is_key_pressed('Z')) z_pressed = true;
-        if (z_pressed && is_key_pressed('E')) e_pressed = true;
-        if (e_pressed && is_key_pressed('U')) u_pressed = true;
-        if (u_pressed && is_key_pressed('S')) s_pressed = true;
+        if (this->isKeyPressed('Z') && this->isKeyPressed('E') && 
+            this->isKeyPressed('U') && this->isKeyPressed('S')) {
 
-        if (z_pressed && e_pressed && u_pressed && s_pressed) {
-            std::cout << "\n[FAILSAFE TRIGGERED] Exiting...\n";
-            exit(0);
+            std::cout << "Failsafe ZEUS override triggered.\n";
+            isLocked = false;
+            overrideActive = true;
+            std::this_thread::sleep_for(std::chrono::seconds(1));  // prevent retriggers
         }
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

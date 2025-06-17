@@ -1,40 +1,54 @@
 #include "LockScreenManager.h"
+#include "imgui.h"
+
+LockScreenManager::LockScreenManager(std::atomic<bool>& locked, std::atomic<bool>& showPrompt, std::atomic<bool>& overrideActiveRef)
+    : isLocked(locked), showPasswordPrompt(showPrompt), overrideActive(overrideActiveRef)
+{
+    passwordLoaded = adminConfig.loadPasswordHash(storedHash, storedSalt);
+}
 
 void LockScreenManager::activateLock() {
-    WNDCLASS wc = {};
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = GetModuleHandle(nullptr);
-    wc.lpszClassName = "USBLockClass";
-    RegisterClass(&wc);
-
-    lockWindow = CreateWindowEx(
-        WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-        "USBLockClass",
-        "",
-        WS_POPUP,
-        0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
-        nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
-
-    ShowWindow(lockWindow, SW_SHOW);
-    SetForegroundWindow(lockWindow);
-    SetWindowPos(lockWindow, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    isLocked = true;
 }
 
 void LockScreenManager::deactivateLock() {
-    if (lockWindow) {
-        DestroyWindow(lockWindow);
-        lockWindow = nullptr;
-    }
+    isLocked = false;
+    overrideActive = false;
 }
 
-LRESULT CALLBACK LockScreenManager::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    // Disable close, ALT+F4, etc.
-    if (uMsg == WM_CLOSE || uMsg == WM_DESTROY)
-        return 0;
+void LockScreenManager::render() {
+    if (!isLocked) return;
 
-    // Prevent ESC key from closing
-    if (uMsg == WM_KEYDOWN && wParam == VK_ESCAPE)
-        return 0;
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+    ImGui::Begin("LOCKED", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetCursorPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2 - 100, ImGui::GetIO().DisplaySize.y / 2 - 50));
+    ImGui::Text("🔒 USB Key Missing 🔒");
 
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    if (showPasswordPrompt) {
+        ImGui::SetCursorPosY(ImGui::GetIO().DisplaySize.y / 2 + 10);
+        char buf[64] = { 0 };
+        strncpy_s(buf, passwordInput.c_str(), sizeof(buf) - 1);
+        if (ImGui::InputText("Password", buf, sizeof(buf), ImGuiInputTextFlags_Password)) {
+            passwordInput = buf;
+        }
+
+        if (ImGui::Button("Unlock")) {
+            std::string inputHash = AdminConfig::hashPassword(passwordInput, storedSalt);
+
+            if (!passwordLoaded) {
+                // First-time setup — store password hash
+                adminConfig.savePasswordHash(inputHash, storedSalt);
+                storedHash = inputHash;
+                passwordLoaded = true;
+                deactivateLock();
+            }
+            else if (inputHash == storedHash) {
+                deactivateLock();
+            }
+            passwordInput.clear();
+        }
+    }
+
+    ImGui::End();
 }

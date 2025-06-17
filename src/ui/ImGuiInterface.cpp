@@ -1,53 +1,73 @@
 #include "ImGuiInterface.h"
 #include "../../vendor/imgui/imgui.h"
 
-ImGuiInterface::ImGuiInterface(UsbKeyManager& manager, std::atomic<bool>& locked)
-    : usbManager(manager), isLocked(locked)
+ImGuiInterface::ImGuiInterface(UsbKeyManager& manager, std::atomic<bool>& locked, std::atomic<bool>& overrideActiveRef)
+    : usbManager(manager), isLocked(locked), overrideActive(overrideActiveRef)
 {
     hasSavedKey = usbManager.loadKey(savedKey);
     drives = usbManager.getUsbDrives();
 }
 
-void ImGuiInterface::render() {
+
+void ImGuiInterface::render()
+{
     ImGui::Begin("USB Key Manager");
 
     // Refresh devices automatically every frame
     drives = usbManager.getUsbDrives();
 
     ImGui::Text("Detected USB Drives:");
-    if (drives.empty()) {
+    if (drives.empty())
+    {
         ImGui::Text("No USB drives found.");
-    } else {
+    }
+    else
+    {
         // Combo box for selecting drives
         std::vector<std::string> comboItems;
-        for (const auto& drive : drives)
+        for (const auto &drive : drives)
             comboItems.push_back(drive.deviceID + " | " + drive.driveLetter);
 
-        std::vector<const char*> itemsCStr;
-        for (const auto& item : comboItems)
+        std::vector<const char *> itemsCStr;
+        for (const auto &item : comboItems)
             itemsCStr.push_back(item.c_str());
 
         ImGui::Combo("Select USB Drive", &selectedDriveIndex, itemsCStr.data(), (int)itemsCStr.size());
     }
 
-    if (!hasSavedKey) {
-        if (ImGui::Button("Assign Selected Drive")) {
-            if (!drives.empty()) {
+    if (!hasSavedKey)
+    {
+        if (ImGui::Button("Assign Selected Drive"))
+        {
+            if (!drives.empty())
+            {
                 usbManager.saveKey(drives[selectedDriveIndex]);
                 savedKey = drives[selectedDriveIndex];
                 hasSavedKey = true;
             }
         }
-    } else {
+    }
+    else
+    {
         ImGui::Separator();
+        bool keyPresent = usbManager.isKeyPresent(savedKey, drives);
         ImGui::Text("Saved Key:");
         ImGui::Text("DeviceID: %s", savedKey.deviceID.c_str());
         ImGui::Text("PNP ID: %s", savedKey.pnpDeviceID.c_str());
         ImGui::Text("Volume Serial: %s", savedKey.volumeSerial.c_str());
         ImGui::Text("Serial: %s", savedKey.serialNumber.c_str());
-        ImGui::Text("Key Status: %s", usbManager.isKeyPresent(savedKey, drives) ? "PRESENT" : "MISSING");
+        ImGui::Text("Key Status: %s", keyPresent ? "PRESENT" : "MISSING");
+        if (keyPresent)
+        {
 
-        if (ImGui::Button("Forget Key")) {
+            if (overrideActive)
+            {
+                overrideActive = false;
+            }
+        }
+
+        if (ImGui::Button("Forget Key"))
+        {
             usbManager.forgetKey();
             hasSavedKey = false;
         }
@@ -56,12 +76,11 @@ void ImGuiInterface::render() {
     ImGui::End();
 
     // Lock Screen Overlay
-    if (isLocked) {
+    if (isLocked)
+    {
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-        ImGui::Begin("LOCKED", nullptr,
-            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+        ImGui::Begin("LOCKED", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
         ImGui::SetCursorPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2 - 150, ImGui::GetIO().DisplaySize.y / 2));
         ImGui::Text("🔒 USB Key Missing 🔒");
         ImGui::End();

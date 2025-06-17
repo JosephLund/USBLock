@@ -1,91 +1,115 @@
 #include <iostream>
-#include <thread>
 #include <atomic>
-
+#include <thread>
 #include "src/core/UsbKeyManager.h"
 #include "src/core/KeyMonitor.h"
 #include "src/core/FailsafeMonitor.h"
 #include "src/core/LockScreenManager.h"
 #include "src/ui/ImGuiInterface.h"
+#include "src/core/KeyMonitor.h"
 
-#include "vendor/imgui/imgui.h"
-#include "vendor/backends/imgui_impl_glfw.h"
-#include "vendor/backends/imgui_impl_opengl3.h"
-
+// ImGui includes (adjust path if needed)
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
 
-void runFailsafe() {
-    FailsafeMonitor failsafe;
-    failsafe.run();
-}
+int main()
+{
+    UsbKeyManager usbManager;
 
-int main() {
-    // Launch failsafe monitor (optional)
-    std::thread failsafeThread(runFailsafe);
-
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW\n";
-        return -1;
+    std::atomic<bool> isLocked(false);
+    std::atomic<bool> showPasswordPrompt(true);
+    std::atomic<bool> overrideActive(false);
+    UsbDrive dummyDrive;
+    bool hasSavedKey = usbManager.loadKey(dummyDrive);
+    if (hasSavedKey)
+    {
+        KeyMonitor keyMonitor(usbManager, isLocked, overrideActive);
+        keyMonitor.start();
     }
 
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    LockScreenManager lockManager(isLocked, showPasswordPrompt, overrideActive);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "USB Key Manager", NULL, NULL);
-    if (!window) {
-        glfwTerminate();
+    FailsafeMonitor failsafe(isLocked, overrideActive);
+    failsafe.start();
+
+    ImGuiInterface imguiInterface(usbManager, isLocked, overrideActive);
+
+    // ImGui init:
+    if (!glfwInit())
         return -1;
-    }
+    GLFWwindow *window = glfwCreateWindow(1280, 720, "USB Lock", NULL, NULL);
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
-
-    // Setup Dear ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
-
+    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui_ImplOpenGL3_Init("#version 130");
 
-    // Core components
-    UsbKeyManager usbManager;
-    std::atomic<bool> isLocked(false);
-    KeyMonitor keyMonitor(usbManager, isLocked);
-    ImGuiInterface ui(usbManager, isLocked);
+    bool wasLocked = false;
 
-    std::thread monitorThread([&]() { keyMonitor.run(); });
-
-    // Main render loop
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window))
+    {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ui.render();
+        if (wasLocked && !isLocked)
+        {
+            ImGui::SetWindowFocus(nullptr); // remove focus from any open window
+            ImGui::SetItemDefaultFocus();   // clear keyboard navigation
+        }
+
+        if (!hasSavedKey)
+        {
+            isLocked = false;
+            wasLocked = false;
+            showPasswordPrompt = false;
+            imguiInterface.render(); // Let user assign a USB key
+            hasSavedKey = usbManager.loadKey(dummyDrive);
+        }
+        else
+        {
+            // Refresh drive list
+            std::vector<UsbDrive> drives = usbManager.getUsbDrives();
+            bool keyPresent = usbManager.isKeyPresent(dummyDrive, drives);
+
+            if (!keyPresent)
+            {
+                isLocked = true;
+                showPasswordPrompt = true;
+                lockManager.render();
+            }
+            else if (isLocked)
+            {
+                isLocked = false; // unlock automatically when key is detected
+                imguiInterface.render();
+            }
+            else
+            {
+                imguiInterface.render();
+            }
+        }
+
+        wasLocked = isLocked;
 
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window);
     }
 
-    // Cleanup
-    monitorThread.detach();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
     glfwDestroyWindow(window);
     glfwTerminate();
-    failsafeThread.detach();
 
     return 0;
 }

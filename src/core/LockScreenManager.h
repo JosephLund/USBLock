@@ -1,12 +1,25 @@
 #pragma once
-#include <windows.h>
+
+#include <atomic>
+#include <string>
+#include "AdminConfig.h"
 
 class LockScreenManager {
 public:
+    LockScreenManager(std::atomic<bool>& locked, std::atomic<bool>& showPasswordPrompt, std::atomic<bool>& overrideActive);
+
+    void render();
     void activateLock();
     void deactivateLock();
 
 private:
-    HWND lockWindow = nullptr;
-    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    std::atomic<bool>& isLocked;
+    std::atomic<bool>& showPasswordPrompt;
+    std::atomic<bool>& overrideActive;
+
+    AdminConfig adminConfig;
+    std::string passwordInput;
+    std::string storedHash;
+    std::string storedSalt;
+    bool passwordLoaded = false;
 };
