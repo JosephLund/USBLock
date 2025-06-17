@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "D:/Programs/mingw64/include/c++/15.1.0", // Path to your MinGW include
+                "D:/Programs/mingw64/include/c++/15.1.0/x86_64-w64-mingw32", // Platform-specific include
+                "D:/Programs/mingw64/include/c++/15.1.0/backward", // Backward compatibility headers
+                "${workspaceFolder}/**" // Your project's source files
+            ],
+            "defines": [],
+            "compilerPath": "D:/Programs/mingw64/bin/g++.exe", // Path to your g++ compiler
+            "intelliSenseMode": "gcc-x64", // Mode for 64-bit GCC
+            "cppStandard": "c++17", // C++ standard version
+            "cStandard": "c11", // C standard version
+            "browse": {
+                "path": [
+                    "D:/Programs/mingw64/include/c++/15.1.0",
+                    "D:/Programs/mingw64/include/c++/15.1.0/x86_64-w64-mingw32",
+                    "D:/Programs/mingw64/include/c++/15.1.0/backward",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

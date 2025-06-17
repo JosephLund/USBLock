@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build USBKeyProject",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-std=c++17",
+                "main.cpp",
+                "src/core/UsbKeyManager.cpp",
+                "src/core/FailsafeMonitor.cpp",
+                "src/core/KeyMonitor.cpp",
+                "src/core/LockScreenManager.cpp",
+                "src/utils/Utils.cpp",
+                "src/ui/ImGuiInterface.cpp",
+                "vendor/imgui/imgui.cpp",
+                "vendor/imgui/imgui_draw.cpp",
+                "vendor/imgui/imgui_tables.cpp",
+                "vendor/imgui/imgui_widgets.cpp",
+                "vendor/backends/imgui_impl_glfw.cpp",
+                "vendor/backends/imgui_impl_opengl3.cpp",
+                "-Ivendor",
+                "-Ivendor/imgui",
+                "-Ivendor/backends",
+                "-Ivendor/glfw/include",
+                "vendor/glfw/build/src/libglfw3.a",
+                "-lgdi32",
+                "-lopengl32",
+                "-luser32",
+                "-lkernel32",
+                "-o",
+                "build/UsbKeyProject.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
