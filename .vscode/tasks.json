@@ -16,6 +16,7 @@
                 "src/core/LockScreenManager.cpp",
                 "src/utils/Utils.cpp",
                 "src/ui/ImGuiInterface.cpp",
+                "src/security/LockScreenDefense.cpp",
                 "vendor/imgui/imgui.cpp",
                 "vendor/imgui/imgui_draw.cpp",
                 "vendor/imgui/imgui_tables.cpp",

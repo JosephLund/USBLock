@@ -4,11 +4,23 @@
 #include <chrono>
 #include <iostream>
 #include <atomic>
+#include <stdexcept>
 
-FailsafeMonitor::FailsafeMonitor(std::atomic<bool>& locked, std::atomic<bool>& override)
-    : isLocked(locked), overrideActive(override) {}
+FailsafeMonitor& FailsafeMonitor::getInstance() {
+    static FailsafeMonitor instance;
+    return instance;
+}
+
+void FailsafeMonitor::initialize(std::atomic<bool>& locked, std::atomic<bool>& override) {
+    isLocked = &locked;
+    overrideActive = &override;
+}
 
 void FailsafeMonitor::start() {
+    if (!isLocked || !overrideActive) {
+        throw std::runtime_error("FailsafeMonitor not initialized.");
+    }
+
     std::thread(&FailsafeMonitor::monitorLoop, this).detach();
 }
 
@@ -18,12 +30,12 @@ bool FailsafeMonitor::isKeyPressed(int key) {
 
 void FailsafeMonitor::monitorLoop() {
     while (true) {
-        if (this->isKeyPressed('Z') && this->isKeyPressed('E') && 
-            this->isKeyPressed('U') && this->isKeyPressed('S')) {
+        if (isKeyPressed('Z') && isKeyPressed('E') &&
+            isKeyPressed('U') && isKeyPressed('S')) {
 
             std::cout << "Failsafe ZEUS override triggered.\n";
-            isLocked = false;
-            overrideActive = true;
+            isLocked->store(false);
+            overrideActive->store(true);
             std::this_thread::sleep_for(std::chrono::seconds(1));  // prevent retriggers
         }
 
