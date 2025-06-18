@@ -62,7 +62,8 @@ LRESULT CALLBACK LockScreenDefense::LowLevelKeyboardProc(int nCode, WPARAM wPara
             (p->vkCode == VK_ESCAPE && GetAsyncKeyState(VK_CONTROL) & 0x8000) ||
             p->vkCode == VK_LWIN || p->vkCode == VK_RWIN)
         {
-            if (ImGui::GetIO().WantCaptureKeyboard)
+            ImGuiIO& io = ImGui::GetIO();
+            if (io.WantCaptureKeyboard || io.WantTextInput)
                 return CallNextHookEx(nullptr, nCode, wParam, lParam); // Let ImGui handle it
 
             return 1;

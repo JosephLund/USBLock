@@ -7,12 +7,14 @@
 #include "src/core/LockScreenManager.h"
 #include "src/ui/ImGuiInterface.h"
 #include "src/core/KeyMonitor.h"
+#include "src/security/LockScreenDefense.h"
 
-// ImGui includes
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 int main()
 {
@@ -34,11 +36,15 @@ int main()
     ImGuiInterface imguiInterface(usbManager, isLocked, overrideActive);
 
     if (!glfwInit()) return -1;
-    GLFWwindow *window = glfwCreateWindow(1280, 720, "USB Lock", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "USB Lock", NULL, NULL);
+    if (!window) return -1;
     glfwMakeContextCurrent(window);
+    HWND hwnd = glfwGetWin32Window(window);
+    // LockScreenDefense::getInstance().activate(hwnd); // store handle only
+    // LockScreenDefense::getInstance().deactivate();   
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
