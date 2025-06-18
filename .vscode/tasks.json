@@ -22,6 +22,7 @@
                 "vendor/imgui/imgui_widgets.cpp",
                 "vendor/backends/imgui_impl_glfw.cpp",
                 "vendor/backends/imgui_impl_opengl3.cpp",
+                "src/security/LockScreenDefense.cpp",
                 "-Ivendor",
                 "-Ivendor/imgui",
                 "-Ivendor/backends",
