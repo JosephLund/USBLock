@@ -86,6 +86,9 @@ int main()
                     LockScreenDefense::getInstance().activate(hwnd);
                 }
 
+                SetForegroundWindow(hwnd);
+                SetFocus(hwnd);
+
                 isLocked = true;
                 showPasswordPrompt = true;
                 lockManager.render();
