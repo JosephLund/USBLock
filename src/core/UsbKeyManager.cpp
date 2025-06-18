@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <map>
+#include "AdminConfig.h"
 #include "../utils/Utils.h"
 
 UsbKeyManager::UsbKeyManager() {}
@@ -92,12 +93,13 @@ std::vector<UsbDrive> UsbKeyManager::getUsbDrives() {
 }
 
 void UsbKeyManager::saveKey(const UsbDrive& key) {
+    std::string combined = key.driveLetter + "\n" + key.deviceID + "\n" + key.pnpDeviceID + "\n" + key.serialNumber;
+    std::string salt = Utils::generateRandomSalt(); // same as for passwords
+    std::string encrypted = AdminConfig::encryptString(combined, salt);
+
     std::ofstream file("config/usbkey.cfg");
     if (file.is_open()) {
-        file << key.driveLetter << std::endl;
-        file << key.deviceID << std::endl;
-        file << key.pnpDeviceID << std::endl;
-        file << key.serialNumber << std::endl;
+        file << salt << "\n" << encrypted;
         file.close();
     }
 }
@@ -105,11 +107,18 @@ void UsbKeyManager::saveKey(const UsbDrive& key) {
 bool UsbKeyManager::loadKey(UsbDrive& key) {
     std::ifstream file("config/usbkey.cfg");
     if (file.is_open()) {
-        std::getline(file, key.driveLetter);
-        std::getline(file, key.deviceID);
-        std::getline(file, key.pnpDeviceID);
-        std::getline(file, key.serialNumber);
+        std::string salt, encrypted;
+        std::getline(file, salt);
+        std::getline(file, encrypted); // read entire encrypted block
         file.close();
+
+        std::string decrypted = AdminConfig::decryptString(encrypted, salt);
+
+        std::stringstream ss(decrypted);
+        std::getline(ss, key.driveLetter);
+        std::getline(ss, key.deviceID);
+        std::getline(ss, key.pnpDeviceID);
+        std::getline(ss, key.serialNumber);
         return true;
     }
     return false;
