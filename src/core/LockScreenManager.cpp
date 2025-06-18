@@ -13,7 +13,7 @@ void LockScreenManager::activateLock() {
 
 void LockScreenManager::deactivateLock() {
     isLocked = false;
-    overrideActive = false;
+    overrideActive = true;
 }
 
 void LockScreenManager::render() {

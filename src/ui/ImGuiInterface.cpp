@@ -70,6 +70,7 @@ void ImGuiInterface::render()
         {
             usbManager.forgetKey();
             hasSavedKey = false;
+            overrideActive = true;
         }
     }
 

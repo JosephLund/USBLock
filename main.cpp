@@ -8,7 +8,7 @@
 #include "src/ui/ImGuiInterface.h"
 #include "src/core/KeyMonitor.h"
 
-// ImGui includes (adjust path if needed)
+// ImGui includes
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -23,22 +23,17 @@ int main()
     std::atomic<bool> overrideActive(false);
     UsbDrive dummyDrive;
     bool hasSavedKey = usbManager.loadKey(dummyDrive);
-    if (hasSavedKey)
-    {
-        KeyMonitor keyMonitor(usbManager, isLocked, overrideActive);
-        keyMonitor.start();
-    }
+
+    KeyMonitor keyMonitor(usbManager, isLocked, overrideActive);
+    keyMonitor.start();
 
     LockScreenManager lockManager(isLocked, showPasswordPrompt, overrideActive);
-
     FailsafeMonitor failsafe(isLocked, overrideActive);
     failsafe.start();
 
     ImGuiInterface imguiInterface(usbManager, isLocked, overrideActive);
 
-    // ImGui init:
-    if (!glfwInit())
-        return -1;
+    if (!glfwInit()) return -1;
     GLFWwindow *window = glfwCreateWindow(1280, 720, "USB Lock", NULL, NULL);
     glfwMakeContextCurrent(window);
     IMGUI_CHECKVERSION();
@@ -58,8 +53,8 @@ int main()
 
         if (wasLocked && !isLocked)
         {
-            ImGui::SetWindowFocus(nullptr); // remove focus from any open window
-            ImGui::SetItemDefaultFocus();   // clear keyboard navigation
+            ImGui::SetWindowFocus(nullptr);
+            ImGui::SetItemDefaultFocus();
         }
 
         if (!hasSavedKey)
@@ -67,16 +62,16 @@ int main()
             isLocked = false;
             wasLocked = false;
             showPasswordPrompt = false;
+            overrideActive = true;
             imguiInterface.render(); // Let user assign a USB key
             hasSavedKey = usbManager.loadKey(dummyDrive);
         }
         else
         {
-            // Refresh drive list
             std::vector<UsbDrive> drives = usbManager.getUsbDrives();
             bool keyPresent = usbManager.isKeyPresent(dummyDrive, drives);
 
-            if (!keyPresent)
+            if (!keyPresent && !overrideActive)
             {
                 isLocked = true;
                 showPasswordPrompt = true;
@@ -84,7 +79,7 @@ int main()
             }
             else if (isLocked)
             {
-                isLocked = false; // unlock automatically when key is detected
+                isLocked = false;
                 imguiInterface.render();
             }
             else
