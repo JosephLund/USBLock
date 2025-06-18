@@ -7,7 +7,14 @@
 #include "AdminConfig.h"
 #include "../utils/Utils.h"
 
-UsbKeyManager::UsbKeyManager() {}
+UsbKeyManager::UsbKeyManager() = default;
+UsbKeyManager::~UsbKeyManager() = default;
+
+
+UsbKeyManager& UsbKeyManager::getInstance() {
+    static UsbKeyManager instance;
+    return instance;
+}
 
 std::vector<UsbDrive> UsbKeyManager::getUsbDrives() {
     std::vector<UsbDrive> drives;

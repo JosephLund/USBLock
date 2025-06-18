@@ -16,7 +16,7 @@
 
 int main()
 {
-    UsbKeyManager usbManager;
+    UsbKeyManager& usbManager = UsbKeyManager::getInstance();
 
     std::atomic<bool> isLocked(false);
     std::atomic<bool> showPasswordPrompt(true);
