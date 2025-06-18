@@ -24,8 +24,8 @@ int main()
     UsbDrive dummyDrive;
     bool hasSavedKey = usbManager.loadKey(dummyDrive);
 
-    KeyMonitor keyMonitor(usbManager, isLocked, overrideActive);
-    keyMonitor.start();
+    KeyMonitor::getInstance().initialize(usbManager, isLocked, overrideActive);
+    KeyMonitor::getInstance().start();
 
     LockScreenManager lockManager(isLocked, showPasswordPrompt, overrideActive);
     FailsafeMonitor failsafe(isLocked, overrideActive);
