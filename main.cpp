@@ -28,8 +28,8 @@ int main()
     KeyMonitor::getInstance().start();
 
     LockScreenManager lockManager(isLocked, showPasswordPrompt, overrideActive);
-    FailsafeMonitor failsafe(isLocked, overrideActive);
-    failsafe.start();
+    FailsafeMonitor::getInstance().initialize(isLocked, overrideActive);
+    FailsafeMonitor::getInstance().start();
 
     ImGuiInterface imguiInterface(usbManager, isLocked, overrideActive);
 
